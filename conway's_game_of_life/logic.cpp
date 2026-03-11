@@ -102,8 +102,8 @@ int main(){
         }
     }
      makecell(arr);
+    display(arr);
      game_of_life(arr);
-     display(arr);
     
     for (int i =0;i<5;i++){
         delete[] arr[i];
