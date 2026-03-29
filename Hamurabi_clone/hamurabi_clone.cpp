@@ -18,16 +18,13 @@ class Hamurabi{
 
     public:
 
-    Hamurabi(): gen(std::random_device{}()) {void update_land_price();}
-    Hamurabi(int p, int b, int a, int y, int s, int i){
-        cout<<"Welcome to Hamurabi!"<<endl;
-        population=p;
-        bushels=b;
-        acres=a;
-        year=y;
-        starved=s;
-        immigrants=i;
-    }
+    Hamurabi(int p, int b, int a, int y, int s, int i) 
+    : population(p), bushels(b), acres(a), year(y), starved(s), immigrants(i), total_starved(0),
+      gen(std::random_device{}()) 
+{
+    cout << "Welcome to Hamurabi!" << endl;
+    update_land_price();
+}
 
     int get_population(){return population;}
     int get_bushels(){return bushels;}
@@ -42,12 +39,12 @@ class Hamurabi{
     void set_starved(int s){starved=s;}
     void set_immigrants(int i){immigrants=i;}
     int get_price(){return land_price;}
-
+    bool check_resources(){}
 
     //logic to update land price ar random each year
     void update_land_price(){
         std::uniform_int_distribution<> dis(17, 26);
-        int land_price = dis(gen);
+        land_price = dis(gen);
         cout<<"The price of land this year is "<<land_price<<" bushels per acre."<<endl;
     }
 
@@ -68,15 +65,138 @@ class Hamurabi{
     //year increment logic
     void next_year(){}
 
+    //logic to plant crops
+    void plant_crops(){}
+
+    //logic to calculate harvest
+    void calculate_harvest(int acres_planted){}
+
+    //logic to calculate rats
+    void calculate_rats(){}
+
+    //logic to calculate immigrants
+    void calculate_immigrants(){}
+
+    //logic to update population
+    void update_population(){}
+
     //logic for evaluation
     void evaluate(){}
 
-    
+    //logic to buy land
+    void buy_land(int acres_to_buy){}
+
+    //logic to sell land
+    void sell_land(int acres_to_sell){}
     
     //logic of game_over
     bool gameover(){}
 
 };
+
+void Hamurabi::calculate_immigrants(){
+    if (starved>0){
+        immigrants=0;
+        return;
+    }
+        immigrants=((20*acres+bushels)/(100*population))+1;
+    
+}
+
+void Hamurabi::update_population(){
+    calculate_immigrants();
+    population-=starved;
+    population+=immigrants;
+    check_plague();
+    
+}
+
+bool Hamurabi::check_resources(){
+    cout<<"You have "<<population<<" people, "<<bushels<<" bushels, and "<<acres<<" acres of land."<<endl;
+    cout<<"Do you really want to buy land? (y/n)"<<endl;
+    char choice;
+    cin>>choice;
+    if(choice=='y' || choice=='Y'){
+        return true;
+    }
+    return false;
+}
+
+void Hamurabi::plant_crops(){
+    cout<<"PLANTING SEASON!"<<endl;
+    cout<<"You currently have "<<acres<<" acres of land."<<endl;
+    int to_plant;
+    cout<<"How many acres do you want to plant?"<<endl;
+    cin>>to_plant;
+    if(to_plant>acres){
+
+        cout<<"You don't have enough land to plant!"<<endl;
+        return; 
+    }
+    if(to_plant>(population*10)){
+        cout<<"Not enough people to plant that much land!"<<endl;
+        return;
+    }
+    int seed_cost=(to_plant+1)/2;
+    if(seed_cost>bushels){
+        cout<<"Not enough bushels to buy seeds!"<<endl;
+        return;
+    }
+    bushels-=seed_cost;
+
+    calculate_harvest(to_plant);
+
+}
+
+void Hamurabi::calculate_harvest(int acres_planted){
+    std::uniform_int_distribution<> yield_dist(1, 5);
+    int yield=yield_dist(gen);
+    int harvest=yield*acres_planted;
+    bushels+=harvest;
+    cout<<"You harvested "<<harvest<<" bushels of grain!"<<endl;
+
+    calculate_rats();
+
+}
+
+void Hamurabi::calculate_rats(){
+    std::bernoulli_distribution rat_dist(0.4);
+    if(rat_dist(gen)){
+        std::uniform_int_distribution<> rat_eat_dist(10, 30);
+        int percent_eaten=rat_eat_dist(gen);
+        int eaten=(percent_eaten*bushels)/100;
+        bushels-=eaten;
+        cout<<"Rats have eaten "<<eaten<<" bushels of grain!"<<endl;
+    }
+}
+
+void Hamurabi::buy_land(int acres_to_buy){
+    cout<<"You want to buy "<<acres_to_buy<<" acres of land."<<endl;
+    cout<<"The price of land is "<<land_price<<" bushels per acre."<<endl;
+
+    int cost = acres_to_buy*land_price;
+    if(cost>bushels){
+        cout<<"Not enough bushels to buy land!"<<endl;
+        return;
+    }
+    if(!check_resources()){
+        return;
+    }
+    acres+=acres_to_buy;
+    bushels-=cost;
+}
+
+void Hamurabi::sell_land(int acres_to_sell){
+    cout<<"You want to sell "<<acres_to_sell<<" acres of land."<<endl;
+    cout<<"The price of land is "<<land_price<<" bushels per acre."<<endl;
+
+    if(acres_to_sell>acres){
+        cout<<"Not enough land to sell!"<<endl;
+        return;
+    }
+    acres-=acres_to_sell;
+    bushels+=(acres_to_sell*land_price);
+}
   
 void Hamurabi::next_year(){
     year++;
@@ -89,23 +209,23 @@ bool Hamurabi::feed_people(int bushels_to_feed){
     }
     int people_fed=bushels_to_feed/bushel_requirement_per_person;
     if(people_fed>=population){
-        starved=0;
-        population-=starved;    
+        starved=0;    
     }
     else{
         starved=population-people_fed;
-        population-=starved;
     }
     bushels-=bushels_to_feed;
+    total_starved+=starved;
     return true;
 }
 
-void Hamurabi::evaluate(){
- int average_starvation = total_starved / 10;
- int acres_per_person = acres / population;
- cout<<"Average Starvation: "<<average_starvation<<endl;
- cout<<"Acres per person: "<<acres_per_person<<endl;
+void Hamurabi::evaluate() {
+    double average_starvation = static_cast<double>(total_starved) / (year - 1);
+    double acres_per_person = static_cast<double>(acres) / population;
 
+    cout << "\n--- FINAL EVALUATION ---" << endl;
+    cout << "Average Starvation: " << average_starvation << " people/year" << endl;
+    cout << "Acres per person: " << acres_per_person << endl;
 }
 
 bool Hamurabi::gameover(){
@@ -134,15 +254,49 @@ bool Hamurabi::gameover(){
 }
 
 int main() {
+    // Initial stats
     Hamurabi game(100, 2800, 1000, 1, 0, 0);
-    int y=game.get_year();
-    int p=game.get_population();
-    int b=game.get_bushels();
-    int a=game.get_acres();
-    int s=game.get_starved();
-    int i=game.get_immigrants();
 
-    cout<<"In year "<<y<<", population is "<<p<<", bushels is "<<b<<", acres is "<<a<<", starved is "<<s<<", immigrants is "<<i<<" ."<<endl;
+    while (!game.gameover()) {
+        cout << "\n========================================" << endl;
+        cout << "Year " << game.get_year() << " Report:" << endl;
+        cout << "Population: " << game.get_population() << endl;
+        cout << "Bushels: " << game.get_bushels() << endl;
+        cout << "Acres: " << game.get_acres() << endl;
+        cout << "Current Land Price: " << game.get_price() << " bushels/acre" << endl;
+        cout << "========================================" << endl;
+
+        // 1. Market Phase
+        int choice;
+        cout << "1. Buy Land | 2. Sell Land | 3. Skip Market: ";
+        cin >> choice;
+
+        if (choice == 1) {
+        int to_buy;
+        cout << "How many acres? "; cin >> to_buy;
+        game.buy_land(to_buy);
+        } else if (choice == 2) {
+        int to_sell;
+        cout << "How many acres? "; cin >> to_sell;
+        game.sell_land(to_sell);
+    }
+        // 2. Feeding Phase
+        int to_feed;
+        cout << "How many bushels do you wish to feed the people? ";
+        cin >> to_feed;
+        game.feed_people(to_feed);
+
+        // 3. Planting Phase (This triggers harvest and rats automatically)
+        game.plant_crops();
+
+        // 4. Year-End Processing
+        game.update_population(); // Starvation, Immigrants, Plague
+        game.update_land_price();
+        game.next_year();
+    }
+
+    // Final Score
+    game.evaluate();
 
     return 0;
 }
