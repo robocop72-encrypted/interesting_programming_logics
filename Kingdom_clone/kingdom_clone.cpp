@@ -15,7 +15,10 @@ class Kingdom{
     int immigrants;
     const int bushel_requirement_per_person=20;
     int total_starved=0;
-    int tax_rate=10; 
+    double tax_rate=10; 
+    double loyalty=50;
+    int justice_spending=200;
+    int migration;
     std::mt19937 gen;
 
 
@@ -62,6 +65,18 @@ class Kingdom{
         return false;
     }
 
+    //logic to update loyalty based on tax rate and conditions
+    void update_loyalty();
+
+    //logic to calculate migration
+    void calculate_migration();
+
+    //logic to check for loyalty 
+    void check_loyalty();
+
+    //logic to calculate corruption
+    void calculate_corruption();
+
     //logic to feed people
     bool feed_people(int bushels_to_feed);
 
@@ -97,6 +112,45 @@ class Kingdom{
 
 };
 
+void Kingdom::calculate_migration(){
+    if(loyalty<40){
+        int exit_rate=(40.0-loyalty)/100.0;
+       migration= static_cast<int>(population*exit_rate);
+        
+    }
+}
+
+void Kingdom::update_loyalty(){
+   double shift=0;
+   if(tax_rate>15){shift-=5;}
+    else if(tax_rate<5){shift+=5;}
+
+    if(justice_spending>300){shift+=5;}
+    else if(justice_spending<100){shift-=5;}
+
+    if(starved>population/4){shift-=10;}
+    else if(starved==0){shift+=5;}
+
+    if (bushels>3000){shift+=2;}
+
+    loyalty+=shift;
+    loyalty=max(0.0, min(100.0, loyalty));
+}
+
+void Kingdom::check_loyalty(){
+    if (loyalty<30){
+        cout<<"Your people are unhappy with your rule! Consider lowering taxes or improving conditions!"<<endl;
+    }
+    else if (loyalty>70){
+        cout<<"Your people are loyal and happy with your rule!"<<endl;
+    }
+    else if(loyalty<10){
+        cout<<"Your people are revolting! Game Over!"<<endl;
+        gameover();
+        exit(0);
+    }
+}
+
 void Kingdom::calculate_immigrants(){
     if (starved>0){
         immigrants=0;
@@ -109,9 +163,14 @@ void Kingdom::calculate_immigrants(){
 }
 
 void Kingdom::update_population(){
-    population-=starved;
+    immigrants=0;
+    population-=starved; 
+    update_loyalty();
+    calculate_migration();
+   if(starved==0&&loyalty>40){
     calculate_immigrants();
     population+=immigrants;
+   }
     check_plague();
     population = max(0, population);
 }
